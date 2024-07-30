@@ -1,5 +1,6 @@
 #include <SFML/Graphics.hpp>
 #include<iostream>
+#include "Player.h"
 
 //USING STATEMENTS
 using namespace std;
@@ -11,7 +12,8 @@ static float elapsedTimeCheck;
 
 //FUNCTION SIGNATURES
 static bool anyKeyPressed();
-sf::Vector2f normalize(sf::Vector2f& vector);
+static bool walkTriggerActivated();
+sf::Vector2f normalize(sf::Vector2f vector);
 sf::Vector2i normalize_int(sf::Vector2i vector);
 
 int main()
@@ -20,12 +22,12 @@ int main()
     sf::RenderWindow window(sf::VideoMode(800, 800), "Main Game Window");
     window.setKeyRepeatEnabled(false);
 
-    sf::Texture playerIdleTexture;
-    sf::Texture playerWalkTexture;
+    Player player;
+    player.setPosition(sf::Vector2f(0, 0));
+
     sf::Texture bulletTexture;
 
-    sf::Sprite player;
-    std::vector<sf::Sprite> bulletVec;
+    std::vector<sf::RectangleShape> bulletVec;
 
     sf::Clock gameClock;
 
@@ -35,43 +37,31 @@ int main()
 
     sf::Vector2i characterPixelResolution(64, 64);
 
-    int walkLoopIndexHorizontal = 0;
-    int walkLoopIndexVertical = 0;
-
-    int idleLoopIndexHorizontal = 0;
-    int idleLoopIndexVertical = 0;
 
     int frameConsolidationCounter = 0;
     int frameElapsedCounter = 0;
 
     std::string fpsCounterConcat;
+    
+    sf::Vector2f bulletHeading;
     //------------------------------------------------------INITIALIZE--------------------------------------------------------------
     
 
 
 
-    //------------------------------------------------------LOAD--------------------------------------------------------------
+    //--------------------------------------------LOAD-----------------------------------------------------
 
-    //PLAYER IDLE TEXTURE
-    if (!playerIdleTexture.loadFromFile("Assets/Spritesheets/Player-Male/Unarmed_Idle/Unarmed_Idle_full.png"))
-        cout << "Coudln't load player idle spritesheet" << endl;
-
-    //PLAYER WALK TEXTURE
-    if (!playerWalkTexture.loadFromFile("Assets/Spritesheets/Player-Male/Unarmed_Walk/Unarmed_Walk_full.png"))
-        cout << "Couldn't load player walk spritesheet" << endl;
+    player.Load();
 
     //HELVETICA FONT
     if (!helvetica.loadFromFile("Assets/Fonts/Helvetica/Helvetica.ttf"))
         cout << "Couldn't load Helvetica font" << endl;
-    
-    if (!bulletTexture.loadFromFile("Assets/Sprites/playerbullet.png"))
-        cout << "Couldn't load bullet texture";
 
-    //------------------------------------------------------LOAD--------------------------------------------------------------
+    //---------------------------------------LOAD------------------------------------------
 
 
 
-    //------------------------------------------------------ASSIGNMENTS--------------------------------------------------------
+    //-----------------------------------------ASSIGNMENTS------------------------------------------------
 
     fpsCounter.setFont(helvetica);
     fpsCounter.setCharacterSize(20);
@@ -79,11 +69,11 @@ int main()
     fpsCounter.setStyle(sf::Text::Bold);
     fpsCounter.setPosition(sf::Vector2f(700, 0));
 
-    //------------------------------------------------------ASSIGNMENTS--------------------------------------------------------
+    //---------------------------------------------ASSIGNMENTS------------------------------------------------
 
 
 
-    //------------------------------------------------------GAME LOOP--------------------------------------------------------------
+    //----------------------------------------------GAME LOOP--------------------------------------------------------------
 
     while (window.isOpen())
     {
@@ -111,85 +101,34 @@ int main()
     
 
 
-    //------------------------------------------------------UPDATE--------------------------------------------------------------
+    //-------------------------------------------------- UPDATE-----------------------------------------------------
 
+        player.Update();
 
-        //======================================================== IDLE LOOP =====================================================
-        //(scuffed)
-        sf::Event isKeyPressed;
+        //========================================= HANDLING BULLETS ==============================================
 
-
-        if (anyKeyPressed) {
-            //cout << "any key not pressed" << endl;
-            player.setTexture(playerIdleTexture);
-            player.setTextureRect(sf::IntRect(sf::Vector2i(idleLoopIndexHorizontal * 64, idleLoopIndexVertical * 64), characterPixelResolution));
-            player.setScale(sf::Vector2f(3, 3));
-        }
-        //======================================================== IDLE LOOP =====================================================
-
-
-        //======================================================== WALK LOOP =====================================================
-        sf::Vector2f playerPosition(player.getPosition());
-
-        if (sf::Keyboard::isKeyPressed(sf::Keyboard::W)) {
-            player.setTexture(playerWalkTexture);
-            //walkLoopIndexHorizontal = 0;
-            walkLoopIndexVertical = 3;
-            player.setPosition(playerPosition + sf::Vector2f(0, -0.10));
-            player.setTextureRect(sf::IntRect(sf::Vector2i(walkLoopIndexHorizontal * 64, walkLoopIndexVertical * 64), characterPixelResolution));
-            player.setScale(sf::Vector2f(3, 3));
-        }
-        if (sf::Keyboard::isKeyPressed(sf::Keyboard::S)) {
-            player.setTexture(playerWalkTexture);
-            //walkLoopIndexHorizontal = 0;
-            walkLoopIndexVertical = 0;
-            player.setPosition(playerPosition + sf::Vector2f(0, 0.10));
-            player.setTextureRect(sf::IntRect(sf::Vector2i(walkLoopIndexHorizontal * 64, walkLoopIndexVertical * 64), characterPixelResolution));
-            player.setScale(sf::Vector2f(3, 3));
-        }
-        if (sf::Keyboard::isKeyPressed(sf::Keyboard::A)) {
-            player.setTexture(playerWalkTexture);
-            //walkLoopIndexHorizontal = 0;
-            walkLoopIndexVertical = 1;
-            player.setPosition(playerPosition + sf::Vector2f(-0.10, 0));
-            player.setTextureRect(sf::IntRect(sf::Vector2i(walkLoopIndexHorizontal * 64, walkLoopIndexVertical * 64), characterPixelResolution));
-            player.setScale(sf::Vector2f(3, 3));
-        }
-        if (sf::Keyboard::isKeyPressed(sf::Keyboard::D)) {
-            player.setTexture(playerWalkTexture);
-            //walkLoopIndexHorizontal = 0;
-            walkLoopIndexVertical = 2;
-            player.setPosition(playerPosition + sf::Vector2f(0.10, 0));
-            player.setTextureRect(sf::IntRect(sf::Vector2i(walkLoopIndexHorizontal * 64, walkLoopIndexVertical * 64), characterPixelResolution));
-            player.setScale(sf::Vector2f(3, 3));
-        }
-        //======================================================== WALK LOOP =====================================================
         
 
-        //======================================================== HANDLING BULLETS =====================================================
-        sf::Vector2f heading = sf::Vector2f(normalize_int(sf::Mouse::getPosition(window)));
+        //if (sf::Mouse::isButtonPressed(sf::Mouse::Left)) {
+        //    bulletVec.push_back(sf::RectangleShape(sf::Vector2f(2, 4)));
+        //    bulletVec[bulletVec.size() - 1].setPosition(player.getPosition());
+        //    bulletHeading = normalize(sf::Vector2f(sf::Mouse::getPosition()) - player.getPosition());
+        //    bulletHeading.x = bulletHeading.x * 200;
+        //    bulletHeading.y = bulletHeading.y * 200;
+        //    //bulletVec[bulletVec.size() - 1].setPosition(sf::Vector2f(sf::Mouse::getPosition(window)));
+        //}
 
-        if (sf::Mouse::isButtonPressed(sf::Mouse::Button::Left)) {
-            bulletVec.push_back(sf::Sprite(bulletTexture));
-            cout << "done" << endl;
-            bulletVec[bulletVec.size() - 1].setPosition(playerPosition);
-            bulletVec[bulletVec.size() - 1].setOrigin(311, 460);
-            bulletVec[bulletVec.size() - 1].setRotation(atan(heading.y / heading.x));
-            bulletVec[bulletVec.size() - 1].setPosition(bulletVec[bulletVec.size() - 1].getPosition() + heading);
-            float xpos = bulletVec[bulletVec.size() - 1].getPosition().x;
-            float ypos = bulletVec[bulletVec.size() - 1].getPosition().y;
-            cout << xpos << "," << ypos << endl;
-        }
-
-
+        /*for (int i = 0; i < bulletVec.size(); i++) {
+            bulletVec[i].setPosition(bulletVec[i].getPosition() + bulletHeading);
+        }*/
         //======================================================== HANDLING BULLETS =====================================================
 
-    //------------------------------------------------------UPDATE--------------------------------------------------------------
+    //------------------------------------------------UPDATE--------------------------------------------------------
 
 
-    //------------------------------------------------------DRAW--------------------------------------------------------------
+    //------------------------------------------------DRAW------------------------------------------
         window.clear();
-        window.draw(player);
+        player.Draw(window);
         window.draw(fpsCounter);
         
         for (int i = 0; i < bulletVec.size(); i++) {
@@ -197,7 +136,7 @@ int main()
         }
 
         window.display();
-    //------------------------------------------------------DRAW--------------------------------------------------------------
+    //------------------------------------------------DRAW-------------------------------------------
 
 
 
@@ -206,21 +145,7 @@ int main()
         frameConsolidationCounter++;
         frameElapsedCounter++;
         //WALK 
-        if (frameConsolidationCounter % 400 == 0) {
-            walkLoopIndexHorizontal++;
-        }
-        if (walkLoopIndexHorizontal == 5) {
-            walkLoopIndexHorizontal = 0;
-        }
-        //WALK
-
-        //IDLE
-        if (frameConsolidationCounter % 1200 == 0) {
-            idleLoopIndexHorizontal++;
-        }
-        if (idleLoopIndexHorizontal == 4) {
-            idleLoopIndexHorizontal = 0;
-        }
+        
         //IDLE
 
         //RUN
@@ -241,16 +166,16 @@ int main()
 
 //=========================================================FUNCTIONS==============================================================
 
-static bool anyKeyPressed() {
-    for (int i = -1; i < sf::Keyboard::KeyCount; ++i) {
-        if (sf::Keyboard::isKeyPressed(static_cast<sf::Keyboard::Key>(i)))
-        return true;
-    }
-    return false;
-}
+//static bool anyKeyPressed() {
+//    for (int i = -1; i < sf::Keyboard::KeyCount; ++i) {
+//        if (sf::Keyboard::isKeyPressed(static_cast<sf::Keyboard::Key>(i)))
+//        return true;
+//    }
+//    return false;
+//}
 
 
-sf::Vector2f normalize(sf::Vector2f& vector) {
+sf::Vector2f normalize(sf::Vector2f vector) {
     int m = vector.x * vector.x + vector.y * vector.y;
     sf::Vector2f unitVector;
     unitVector.x = vector.x / m;
@@ -267,4 +192,13 @@ sf::Vector2i normalize_int(sf::Vector2i vector) {
 
     return unitVector;
 }
+
+static bool anyKeyPressed() {
+    for (int i = -1; i < sf::Keyboard::KeyCount; ++i) {
+        if (sf::Keyboard::isKeyPressed(static_cast<sf::Keyboard::Key>(i)))
+            return true;
+    }
+    return false;
+}
+
 //=========================================================FUNCTIONS==============================================================
