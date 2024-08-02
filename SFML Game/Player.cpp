@@ -1,24 +1,16 @@
 #include "Player.h"
-#include<iostream>
-#include<algorithm>
-#include<vector>
-#include<math.h>
+#include "Util.h"
 
 using namespace std;
 
 int idleHorizontalIndex = 0, idleVerticalIndex = 0;
 int walkHorizontalIndex = 0, walkVerticalIndex = 0;
-int singleLeftMouseClickFlag = 0;
+int runHorizontalIndex = 0, runVerticalIndex = 0;
 
 vector<sf::RectangleShape> bulletVec;
 vector<sf::Vector2f> bulletDir;
 
 sf::Vector2f heading;
-
-static bool anyKeyPressed();
-static bool walkTriggerActivated();
-static bool isMouseLeftButtonClicked();
-static bool playerBulletDeletionValidated(sf::RectangleShape& bullet);
 
 //===================================================== CONSTRUCTORS ===================================================================
 
@@ -36,12 +28,14 @@ Player::Player(const sf::Vector2f& origin, const sf::Vector2f& initPos) {
 
 //----------------------------------------------------------- EVENT FUNCTIONS --------------------------------------------------------
 void Player::Shoot(sf::RenderWindow& window) {
-    if (isMouseLeftButtonClicked() && singleLeftMouseClickFlag == 0) {
-        singleLeftMouseClickFlag = 1;
+    if (Util::isMouseLeftButtonClicked() && Util::singleLeftClickFlag == 0) {
+        Util::singleLeftClickFlag = 1;
         bulletVec.push_back(sf::RectangleShape(sf::Vector2f(20, 5)));
         int i = bulletVec.size() - 1;
-        bulletVec[i].setPosition(this->getPosition());
-        heading = sf::Vector2f(sf::Mouse::getPosition(window)) - this->getPosition();
+        bulletVec[i].setOrigin(sf::Vector2f(10, 2.5));
+        bulletVec[i].setPosition(this->sprite.getPosition());
+        heading = sf::Vector2f(sf::Mouse::getPosition(window)) - this->sprite.getPosition();
+        Util::unitize(heading);
         bulletVec[i].setRotation(atan(heading.y / heading.x) * 180 / 3.14);
         heading.x = heading.x * baseBulletVelocity;
         heading.y = heading.y * baseBulletVelocity;
@@ -70,18 +64,22 @@ void Player::Load() {
 void Player::Update(int& frameConsolidationCounter, sf::RenderWindow& window) {
     this->Shoot(window);
     for (int i = 0; i < bulletVec.size(); i++) {
-        bulletVec[i].setPosition(bulletVec[i].getPosition() + bulletDir[i]);       
-        if (playerBulletDeletionValidated(bulletVec[i])) {
+        bulletVec[i].setPosition(bulletVec[i].getPosition() + bulletDir[i]); 
+        if (Util::playerBulletDeletionValidated(bulletVec[i])) {
             bulletVec.erase(bulletVec.begin() + i);
             bulletDir.erase(bulletDir.begin() + i);
         }
     }
-    if (!anyKeyPressed()) {
-        this->playIdleLoop(frameConsolidationCounter);
+    if (Util::walkTriggerActivated() && Util::runTriggerActivated()) {
+        this->playRunLoop(frameConsolidationCounter);
         return;
     }
-    if (walkTriggerActivated()) {
+    if (Util::walkTriggerActivated()) {
         this->playWalkLoop(frameConsolidationCounter);
+        return;
+    }
+    if (!Util::anyKeyPressed()) {
+        this->playIdleLoop(frameConsolidationCounter);
         return;
     }
 }
@@ -158,6 +156,40 @@ void Player::playWalkLoop(int& frameConsolidationCounter) {
     idleVerticalIndex = 0;
 }
 
+void Player::playRunLoop(int& frameConsolidationCounter) {
+    sprite.setTexture(runTexture);
+    //sprite.scale(3, 3);
+
+    if (sf::Keyboard::isKeyPressed(sf::Keyboard::W)) {
+        runVerticalIndex = 3;
+        sprite.setPosition(sprite.getPosition() + sf::Vector2f(c_basePlayerSpeed.x * 0, c_basePlayerSpeed.y * -2.5));
+        sprite.setTextureRect(sf::IntRect(sf::Vector2i(runHorizontalIndex * 64, runVerticalIndex * 64), c_playerSpriteResolution));
+    }else if (sf::Keyboard::isKeyPressed(sf::Keyboard::S)) {
+        runVerticalIndex = 0;
+        sprite.setPosition(sprite.getPosition() + sf::Vector2f(c_basePlayerSpeed.x * 0, c_basePlayerSpeed.y * 2.5));
+        sprite.setTextureRect(sf::IntRect(sf::Vector2i(runHorizontalIndex * 64, runVerticalIndex * 64), c_playerSpriteResolution));
+    }else if (sf::Keyboard::isKeyPressed(sf::Keyboard::A)) {
+        runVerticalIndex = 1;
+        sprite.setPosition(sprite.getPosition() + sf::Vector2f(c_basePlayerSpeed.x * -2.5, c_basePlayerSpeed.y * 0));
+        sprite.setTextureRect(sf::IntRect(sf::Vector2i(runHorizontalIndex * 64, runVerticalIndex * 64), c_playerSpriteResolution));
+    }else if (sf::Keyboard::isKeyPressed(sf::Keyboard::D)) {
+        runVerticalIndex = 2;
+        sprite.setPosition(sprite.getPosition() + sf::Vector2f(c_basePlayerSpeed.x * 2.5, c_basePlayerSpeed.y * 0));
+        sprite.setTextureRect(sf::IntRect(sf::Vector2i(runHorizontalIndex * 64, runVerticalIndex * 64), c_playerSpriteResolution));
+    }
+
+    if (runHorizontalIndex == 7) {
+        runHorizontalIndex = 0;
+    }
+
+    if (frameConsolidationCounter % 150 == 0) {
+        runHorizontalIndex++;
+    }
+
+    idleHorizontalIndex = 0;
+    idleVerticalIndex = 0;
+}
+
 //------------------------------------------------------------------------------------------------------------------------------------
 
 
@@ -167,10 +199,6 @@ void Player::playWalkLoop(int& frameConsolidationCounter) {
 
 
 //--------------------------------------------------- GETTERS AND SETTERS ----------------------------------------------------------
-sf::Vector2f Player::getPosition() {
-    return sprite.getPosition();
-}
-
 void Player::setPosition(const sf::Vector2f& position) {
     sprite.setPosition(position);
 }
@@ -180,53 +208,6 @@ void Player::setTexture(const sf::Texture& texture) {
 }
 
 void Player::setOrigin(const sf::Vector2f& origin) {
-    sprite.setOrigin(origin);
+    this->sprite.setOrigin(origin);
 }
-
 //------------------------------------------------------------------------------------------------------------------------------------
-
-
-
-
-
-
-//--------------------------------------------------- STATIC LOGIC FUNCTIONS ---------------------------------------------------------
-static bool runTriggerActivated() {
-    if (sf::Keyboard::isKeyPressed(sf::Keyboard::W) && sf::Keyboard::isKeyPressed(sf::Keyboard::LShift) || sf::Keyboard::isKeyPressed(sf::Keyboard::A) && sf::Keyboard::isKeyPressed(sf::Keyboard::LShift) || sf::Keyboard::isKeyPressed(sf::Keyboard::S) && sf::Keyboard::isKeyPressed(sf::Keyboard::LShift) || sf::Keyboard::isKeyPressed(sf::Keyboard::D) && sf::Keyboard::isKeyPressed(sf::Keyboard::LShift)) {
-        return true;
-    }
-    return false;
-}
-
-static bool walkTriggerActivated() {
-    if (sf::Keyboard::isKeyPressed(sf::Keyboard::W) || sf::Keyboard::isKeyPressed(sf::Keyboard::A) || sf::Keyboard::isKeyPressed(sf::Keyboard::S) || sf::Keyboard::isKeyPressed(sf::Keyboard::D)) {
-        return true;
-    }
-    return false;
-}
-
-static bool anyKeyPressed() {
-    for (int i = -1; i < sf::Keyboard::KeyCount; ++i) {
-        if (sf::Keyboard::isKeyPressed(static_cast<sf::Keyboard::Key>(i)))
-            return true;
-    }
-    return false;
-}
-
-static bool isMouseLeftButtonClicked() {
-    if (sf::Mouse::isButtonPressed(sf::Mouse::Left)) {
-        return true;
-    }
-    singleLeftMouseClickFlag = 0;
-    return false;
-}
-
-static bool playerBulletDeletionValidated(sf::RectangleShape& bullet) {
-    float x = bullet.getPosition().x;
-    float y = bullet.getPosition().y;
-    if (x > 800 || x < 0 || y>800 || y < 0) {
-        return true;
-    }
-    return false;
-}
-//---------------------------------------------------------------------------------------------------------------------------------------
