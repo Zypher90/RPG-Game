@@ -94,4 +94,9 @@ bool Util::playerBulletDeletionValidated(sf::RectangleShape& bullet) {
     }
     return false;
 }
+
+int Util::randomNumber(float& seed) {
+    srand(seed);
+    return 1 + rand() % 4;
+}
 //=============================================================================================================================

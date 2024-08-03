@@ -5,6 +5,7 @@
 #include<algorithm>
 #include<vector>
 #include<math.h>
+#include<cstdlib>
 
 class Util{
 public:
@@ -25,4 +26,6 @@ public:
 	static bool runTriggerActivated();
 	static bool isMouseLeftButtonClicked();
 	static bool playerBulletDeletionValidated(sf::RectangleShape& bullet);
+
+	static int randomNumber(float& seed);
 };

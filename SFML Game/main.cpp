@@ -38,6 +38,8 @@ int main()
         Util::showFPS(fpsClock, fpsCounter, window);
         window.display();
         
+        cout << Util::randomNumber() << endl;
+
         fpsCounter++;
         frameCounter++;
     }
