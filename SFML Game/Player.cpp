@@ -2,20 +2,12 @@
 
 using namespace std;
 
-int idleHorizontalIndex = 0, idleVerticalIndex = 0;
-int walkHorizontalIndex = 0, walkVerticalIndex = 0;
-int runHorizontalIndex = 0, runVerticalIndex = 0;
-
 vector<sf::RectangleShape> bulletVec;
 vector<sf::Vector2f> bulletDir;
 
 sf::Vector2f heading;
 
 //===================================================== CONSTRUCTORS ===================================================================
-
-Player::Player(const sf::Vector2f& origin) {
-    setOrigin(origin);
-}
 
 Player::Player(const sf::Vector2f& origin, const sf::Vector2f& initPos) {
     setOrigin(origin);
@@ -116,6 +108,7 @@ void Player::playIdleLoop(int& frameConsolidationCounter) {
     }
      
      walkHorizontalIndex = 0;
+     runHorizontalIndex = 9;
 }
 
 void Player::playWalkLoop(int& frameConsolidationCounter) {

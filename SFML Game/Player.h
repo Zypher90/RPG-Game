@@ -14,15 +14,17 @@ public:
 	const sf::Vector2f c_basePlayerSpeed = sf::Vector2f(0.10, 0.10);
 	const sf::Vector2i c_playerSpriteResolution = sf::Vector2i(64, 64);
 
-
 private:
 	sf::Texture idleTexture;
 	sf::Texture walkTexture;
 	sf::Texture runTexture;
 
 
+	int idleHorizontalIndex = 0, idleVerticalIndex = 0;
+	int walkHorizontalIndex = 0, walkVerticalIndex = 0;
+	int runHorizontalIndex = 0, runVerticalIndex = 0;
+
 public:
-	Player(const sf::Vector2f& origin);
 	Player(const sf::Vector2f& origin, const sf::Vector2f& initPos);
 
 	void Load();

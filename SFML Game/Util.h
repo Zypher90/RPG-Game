@@ -27,5 +27,5 @@ public:
 	static bool isMouseLeftButtonClicked();
 	static bool playerBulletDeletionValidated(sf::RectangleShape& bullet);
 
-	static int randomNumber(float& seed);
+	static int randomNumber();
 };

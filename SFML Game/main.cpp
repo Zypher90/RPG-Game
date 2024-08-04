@@ -1,4 +1,5 @@
 #include "Player.h"
+#include "Enemy.h"
 
 //USING STATEMENTS
 using namespace std;
@@ -12,6 +13,7 @@ int main()
     window.setKeyRepeatEnabled(false);
 
     Player player(sf::Vector2f(32, 32), sf::Vector2f(400, 400));
+    Enemy enemy(sf::Vector2f(32, 32), sf::Vector2f(600, 200));
 
     sf::Clock fpsClock;
 
@@ -20,6 +22,7 @@ int main()
 
     Util::initTextBoxes();
     player.Load();   
+    enemy.Load();
     
 
     while (window.isOpen())
@@ -32,14 +35,14 @@ int main()
         }
 
         player.Update(frameCounter, window);
+        enemy.Update(frameCounter, player);
 
         window.clear();
         player.Draw(window);
+        enemy.Draw(window);
         Util::showFPS(fpsClock, fpsCounter, window);
         window.display();
         
-        cout << Util::randomNumber() << endl;
-
         fpsCounter++;
         frameCounter++;
     }
