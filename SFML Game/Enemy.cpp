@@ -50,7 +50,6 @@ void Enemy::Draw(sf::RenderWindow& window) {
 void Enemy::randomMovement(int& frameConsolidationCounter) {
 	float t = enemyMovementClock.getElapsedTime().asSeconds();
 	if (t > 9.8 && t < 10.2) {
-		cout << "assigning direction and distance" << endl;
 		enemyMovementClock.restart();
 		movedir = this->moveDirection();
 		movedis = this->moveDistance();
